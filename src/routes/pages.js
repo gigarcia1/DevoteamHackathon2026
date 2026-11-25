@@ -3,7 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const views = require('../../views/pages');
-const { bySku, CATEGORIAS, complementos, productos, cents } = require('../lib/catalog');
+const { bySku, CATEGORIAS, cents, ventaCruzada } = require('../lib/catalog');
 const cart = require('../lib/cart');
 const { byId: packsById } = require('../lib/packs');
 const { esc } = require('../lib/security');
@@ -27,19 +27,16 @@ router.get('/categoria/:cat', (req, res, next) => {
 router.get('/producto/:sku', (req, res, next) => {
   const p = bySku.get(req.params.sku);
   if (!p) return next();
-  html(res, views.producto(p, complementos(p, 4), cart.summary(req.sid).count));
+  const s = cart.summary(req.sid);
+  // Lo que queda tras añadir este producto (es lo siguiente que hará el cliente)
+  const restante = s.restante - (s.lines.some((l) => l.sku === p.sku) ? 0 : cents(p));
+  const excluir = new Set([p.sku, ...s.lines.map((l) => l.sku)]);
+  html(res, views.producto(p, ventaCruzada(Math.max(0, restante), excluir, 4), s.count, Math.max(0, restante)));
 });
 
 router.get('/carrito', (req, res) => {
   const s = cart.summary(req.sid);
-  const enCarrito = new Set(s.lines.map((l) => l.sku));
-  // Sugerencias: complementos de lo que hay en el carrito que quepan en lo que queda hasta 4.000 €
-  const pool = new Map();
-  for (const l of s.lines) for (const c of complementos(l.p, 8)) pool.set(c.sku, c);
-  if (!pool.size) for (const p of productos) pool.set(p.sku, p);
-  const sug = [...pool.values()]
-    .filter((p) => p.disponible && !enCarrito.has(p.sku) && cents(p) <= s.restante)
-    .sort((a, b) => b.precio - a.precio).slice(0, 4);
+  const sug = ventaCruzada(Math.max(0, s.restante), new Set(s.lines.map((l) => l.sku)), 4);
   html(res, views.carrito(s, sug, s.count, req.query.ok ? 'Añadido al carrito.' : ''));
 });
 

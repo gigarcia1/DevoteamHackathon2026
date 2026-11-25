@@ -57,4 +57,14 @@ function complementos(p, limit = 4) {
     .slice(0, limit);
 }
 
-module.exports = { productos, bySku, catalogJson, CATEGORIAS, cents, fmt, byCategoria, complementos, coCompras };
+// Venta cruzada que puntúa: solo iluminación, textil, almacenaje y accesorios, disponibles,
+// que quepan en lo que queda de presupuesto, de mayor a menor precio.
+const CROSS_CATS = ['iluminacion', 'textil', 'almacenaje', 'accesorio'];
+function ventaCruzada(restanteCents, excluir = new Set(), limit = 4) {
+  return productos
+    .filter((p) => CROSS_CATS.includes(p.categoria) && p.disponible && !excluir.has(p.sku) && cents(p) <= restanteCents)
+    .sort((a, b) => b.precio - a.precio)
+    .slice(0, limit);
+}
+
+module.exports = { productos, bySku, catalogJson, CATEGORIAS, cents, fmt, byCategoria, complementos, coCompras, ventaCruzada };

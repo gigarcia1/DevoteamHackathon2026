@@ -92,7 +92,7 @@ function categoria(cat, cartCount) {
   });
 }
 
-function producto(p, comps, cartCount) {
+function producto(p, comps, cartCount, restante = 400000) {
   const buy = p.disponible
     ? `<form method="post" action="/carrito/anadir" class="buy">
   <input type="hidden" name="sku" value="${esc(p.sku)}">
@@ -123,8 +123,9 @@ function producto(p, comps, cartCount) {
   </div>
 </div>
 ${TRUST}
-<section aria-labelledby="h-comp"><h2 id="h-comp">Completa tu compra</h2>
-<div class="grid">${comps.map((c) => card(c)).join('')}</div></section>`,
+${comps.length ? `<section aria-labelledby="h-comp"><h2 id="h-comp">Te quedan ${fmt(restante)} de presupuesto: completa tu casa</h2>
+<p>Iluminación, textil, almacenaje y accesorios que caben en tu presupuesto de 4.000 €.</p>
+<div class="grid">${comps.map((c) => card(c, { label: 'Añadir' })).join('')}</div></section>` : ''}`,
   });
 }
 
@@ -154,14 +155,16 @@ ${s.faltaEnvio > 0 ? `<p class="hint">Te faltan <strong>${fmt(s.faltaEnvio)}</st
 <thead><tr><th scope="col">Producto</th><th scope="col">Precio</th><th scope="col">Cantidad</th><th scope="col">Subtotal</th><th scope="col">Quitar</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
 <p class="total">Total: <strong>${fmt(s.total)}</strong> (IVA incluido)</p>
+<p class="iva-note">Precios con IVA incluido. Envío gratis desde 500 €, montaje gratis desde 1.500 €.</p>
 <p><a class="btn btn-big btn-primary btn-block" href="/checkout">Finalizar compra</a></p>
-${sugerencias.length ? `<section aria-labelledby="h-sug"><h2 id="h-sug">Completa tu compra</h2><p>Accesorios y complementos que caben en lo que te queda de presupuesto.</p><div class="grid">${sugerencias.map((p) => card(p)).join('')}</div></section>` : ''}`
+${sugerencias.length ? `<section aria-labelledby="h-sug"><h2 id="h-sug">Te quedan ${fmt(Math.max(0, s.restante))} de presupuesto: completa tu casa</h2><p>Iluminación, textil, almacenaje y accesorios que caben en lo que te queda.</p><div class="grid">${sugerencias.map((p) => card(p, { label: 'Añadir' })).join('')}</div></section>` : ''}`
     : `<p>Tu carrito está vacío.</p><p><a class="btn" href="/">Ver packs en la portada</a></p>`;
   return layout({
     title: `Tu carrito (${s.count}) · Casa Guernica`,
     description: 'Revisa los productos de tu carrito, el total con IVA y lo que te queda para envío y montaje gratis.',
     cartCount,
-    body: `<h1>Tu carrito</h1>${msg ? `<p class="ok" role="status">${esc(msg)}</p>` : ''}${body}`,
+    body: `<h1>Tu carrito</h1>
+<p class="iva-note">Precios con IVA incluido. Envío gratis desde 500 €, montaje gratis desde 1.500 €.</p>${msg ? `<p class="ok" role="status">${esc(msg)}</p>` : ''}${body}`,
   });
 }
 

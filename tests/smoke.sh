@@ -54,6 +54,8 @@ if [ "$LOCAL" = 1 ]; then
   curl -s -b $CK -o /dev/null -X POST "$BASE/carrito/anadir" -d "sku=sofa-nordico-3-plazas&qty=1&precio=1"
   curl -s -b $CK -o /dev/null -X POST "$BASE/carrito/pack" -d "pack=oficina-basico"
   curl -s -b $CK "$BASE/carrito" > $J/cart; check "carrito con Comprar ahora" 'grep -q "Comprar ahora" $J/cart'
+  check "carrito: venta cruzada + IVA" 'grep -q "de presupuesto: completa tu casa" $J/cart && grep -q "Precios con IVA incluido. Envío gratis desde 500 €, montaje gratis desde 1.500 €." $J/cart && ! grep -q "/img/sofa.svg\" alt=\"Sofá Alba" $J/cart'
+  R=$(ask '{"pregunta":"Sillon de direccion Ejecutivo"}'); check "asistente: nombre exacto -> precio exacto" 'echo "$R" | grep -q "319,00"'
   curl -s -b $CK "$BASE/checkout" > $J/co; check "checkout sin selector de pago, 1 h1" '! grep -q "type=\"radio\"" $J/co && [ $(grep -o "<h1" $J/co | wc -l) = 1 ] && grep -q "Pago simulado" $J/co'
   V=$(curl -s -b $CK -o $J/val -w "%{http_code}" -X POST "$BASE/checkout" -d "name=&email=malo&address=")
   check "validación -> 200 con mensaje" '[ "$V" = 200 ] && grep -q "Revisa estos datos" $J/val'

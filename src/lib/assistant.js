@@ -77,6 +77,16 @@ function responder(preguntaRaw) {
     return out.join('\n').slice(0, 1450);
   }
 
+  // 2a) Nombre exacto: si la pregunta contiene el nombre completo de un producto, se responde con ese producto
+  const exactos = productos
+    .map((p) => ({ p, n: norm(p.nombre), nb: norm(p.nombre).replace(/ \d+ plazas?$| tres plazas$/, '') }))
+    .filter((x) => has(q, x.n) || (x.nb.split(' ').length >= 2 && has(q, x.nb)))
+    .sort((a, b) => b.n.length - a.n.length);
+  if (exactos.length) {
+    const top = exactos.filter((x) => x.n.length === exactos[0].n.length || x.nb.length >= exactos[0].nb.length).map((x) => x.p);
+    return listar(top, top.length === 1 ? 'Este es el producto:' : 'Estos son los productos:').slice(0, 1450);
+  }
+
   // 2) Búsqueda en catálogo
   let categorias = cats;
   if (categorias.includes('silla_oficina')) categorias = categorias.filter((c) => c !== 'silla' && c !== 'escritorio' || has(q, 'escritorio'));

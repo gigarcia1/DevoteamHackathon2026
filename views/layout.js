@@ -36,11 +36,11 @@ ${scripts.map((s) => `<script src="${s}" defer></script>`).join('\n')}
 </html>`;
 }
 
-function card(p, { showAdd = true } = {}) {
+function card(p, { showAdd = true, label = "Añadir al carrito" } = {}) {
   const add = !p.disponible
     ? '<p class="nostock">Sin stock</p><button type="button" class="btn" disabled>Sin stock</button>'
     : showAdd
-      ? `<form method="post" action="/carrito/anadir"><input type="hidden" name="sku" value="${esc(p.sku)}"><button type="submit" class="btn" aria-label="Añadir al carrito: ${esc(p.nombre)}">Añadir al carrito</button></form>`
+      ? `<form method="post" action="/carrito/anadir"><input type="hidden" name="sku" value="${esc(p.sku)}"><button type="submit" class="btn" aria-label="${label}: ${esc(p.nombre)}">${label}</button></form>`
       : '';
   return `<article class="card">
   <a href="/producto/${esc(p.sku)}"><img src="/img/${esc(p.categoria)}.svg" alt="${esc(p.nombre)}, ${esc(p.color)}, ${esc(p.material)}" width="240" height="160" loading="lazy"></a>
