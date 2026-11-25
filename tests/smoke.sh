@@ -53,9 +53,14 @@ if [ "$LOCAL" = 1 ]; then
   CK=$J/ck; curl -s -c $CK -o /dev/null "$BASE/"
   curl -s -b $CK -o /dev/null -X POST "$BASE/carrito/anadir" -d "sku=sofa-nordico-3-plazas&qty=1&precio=1"
   curl -s -b $CK -o /dev/null -X POST "$BASE/carrito/pack" -d "pack=oficina-basico"
-  L=$(curl -s -b $CK -o /dev/null -w "%{redirect_url}" -X POST "$BASE/checkout" --data-urlencode "name=Ana Prueba" --data-urlencode "email=ana@example.com" --data-urlencode "address=Calle Mayor 1, Madrid" -d "pago=bizum")
+  curl -s -b $CK "$BASE/carrito" > $J/cart; check "carrito con Comprar ahora" 'grep -q "Comprar ahora" $J/cart'
+  curl -s -b $CK "$BASE/checkout" > $J/co; check "checkout sin selector de pago, 1 h1" '! grep -q "type=\"radio\"" $J/co && [ $(grep -o "<h1" $J/co | wc -l) = 1 ] && grep -q "Pago simulado" $J/co'
+  V=$(curl -s -b $CK -o $J/val -w "%{http_code}" -X POST "$BASE/checkout" -d "name=&email=malo&address=")
+  check "validación -> 200 con mensaje" '[ "$V" = 200 ] && grep -q "Revisa estos datos" $J/val'
+  L=$(curl -s -b $CK -o /dev/null -w "%{redirect_url}" -X POST "$BASE/checkout" --data-urlencode "name=Ana Prueba" --data-urlencode "email=ana@example.com" --data-urlencode "address=Calle Mayor 1, Madrid")
   check "checkout -> /confirmacion" 'echo "$L" | grep -q "/confirmacion"'
-  curl -s -b $CK "$BASE/confirmacion" > $J/conf
+  curl -s -b $CK "$L" > $J/conf
+  check "confirmación con ✓ y total" 'grep -q "Pedido confirmado" $J/conf && grep -q "Total" $J/conf'
   check "confirmación con nº de pedido" 'grep -qE "[0-9a-f]{8}-[0-9a-f]{4}-4" $J/conf'
   sleep 0.3
   check "mock: contrato OK" 'grep -q "MOCK OK" /tmp/mock.log'

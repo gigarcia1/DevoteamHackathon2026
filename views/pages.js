@@ -141,7 +141,7 @@ function carrito(s, sugerencias, cartCount, msg) {
   <td><form method="post" action="/carrito/actualizar" class="inline"><input type="hidden" name="sku" value="${esc(l.sku)}"><input type="hidden" name="qty" value="0"><button type="submit" class="btn-small" aria-label="Quitar ${esc(l.p.nombre)}">Quitar</button></form></td>
 </tr>`).join('');
   const body = s.lines.length ? `
-<div class="checkout-top"><p class="total">Total: <strong>${fmt(s.total)}</strong></p><a class="btn btn-big btn-primary" href="/checkout">Finalizar compra</a></div>
+<div class="checkout-top"><p class="total">Total: <strong>${fmt(s.total)}</strong></p><a class="btn btn-big btn-primary" href="/checkout">Comprar ahora</a></div>
 <div class="budget" role="status">
   <p>Te quedan <strong>${fmt(Math.max(0, s.restante))}</strong> de 4.000 €</p>
   <div class="bar"><div class="fill w${Math.round(pct / 5) * 5}"></div></div>
@@ -167,40 +167,52 @@ ${sugerencias.length ? `<section aria-labelledby="h-sug"><h2 id="h-sug">Completa
 
 function checkout(s, cartCount, errors = [], values = {}) {
   const v = (k) => esc(values[k] || '');
-  const pago = values.pago || 'tarjeta';
-  const radio = (val, label) => `<div class="radio"><input type="radio" id="pago-${val}" name="pago" value="${val}"${pago === val ? ' checked' : ''}><label for="pago-${val}">${label}</label></div>`;
+  const resumen = s.lines.map((l) => `<li>${l.quantity} × ${esc(l.p.nombre)} <span>${fmt(l.line)}</span></li>`).join('');
   return layout({
-    title: 'Finalizar compra como invitado · Casa Guernica',
-    description: 'Finaliza tu compra como invitado en un solo paso: nombre, email, dirección y método de pago.',
+    title: 'Comprar ahora como invitado · Casa Guernica',
+    description: 'Compra como invitado en un solo paso: nombre, email y dirección. Pago simulado, no se cobra nada.',
     cartCount,
-    body: `<h1>Finalizar compra</h1>
+    body: `<h1>Comprar ahora</h1>
 <p>Total del pedido: <strong>${fmt(s.total)}</strong> (${s.count} artículos, IVA incluido). <a href="/carrito">Volver al carrito</a></p>
-${errors.length ? `<div class="errors" role="alert"><ul>${errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></div>` : ''}
+${errors.length ? `<div class="errors" role="alert"><p><strong>Revisa estos datos:</strong></p><ul>${errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></div>` : ''}
 <form method="post" action="/checkout" class="checkout">
-  <label for="name">Nombre completo</label>
+  <label for="name">Nombre</label>
   <input id="name" name="name" type="text" autocomplete="name" required value="${v('name')}">
   <label for="email">Email</label>
   <input id="email" name="email" type="email" autocomplete="email" required value="${v('email')}">
-  <label for="address">Dirección de envío</label>
-  <textarea id="address" name="address" autocomplete="street-address" rows="3" required>${v('address')}</textarea>
-  <fieldset><legend>Método de pago (simulado, no se piden datos)</legend>
-    ${radio('tarjeta', 'Tarjeta')}${radio('bizum', 'Bizum')}${radio('transferencia', 'Transferencia')}
-  </fieldset>
-  <button type="submit" class="btn btn-big btn-primary">Confirmar pedido</button>
-</form>`,
+  <label for="address">Dirección</label>
+  <input id="address" name="address" type="text" autocomplete="street-address" required value="${v('address')}">
+  <p class="pago-sim">Pago simulado, no se cobra nada.</p>
+  <button type="submit" class="btn btn-big btn-primary btn-block">Comprar ahora</button>
+</form>
+<section aria-labelledby="h-res"><h2 id="h-res">Resumen</h2><ul class="pack-items">${resumen}</ul></section>`,
   });
 }
 
 function confirmacion(o, cartCount) {
+  const detalle = o.items
+    ? `<ul class="pack-items">${o.items.map((i) => `<li>${i.quantity} × ${esc(i.name)} <span>${fmt(Math.round(i.unit_price * 100) * i.quantity)}</span></li>`).join('')}</ul>
+<p class="total">Total: <strong>${fmt(Math.round(o.total * 100))}</strong> (IVA incluido)</p>`
+    : '<p>Hemos recibido tu pedido correctamente.</p>';
   return layout({
     title: `Pedido confirmado ${o.order_id.slice(0, 8)} · Casa Guernica`,
     description: 'Tu pedido se ha confirmado correctamente. Aquí tienes el número de pedido y el resumen de la compra.',
     cartCount,
-    body: `<h1>¡Pedido confirmado!</h1>
+    body: `<h1>✓ Pedido confirmado</h1>
 <p class="ok">Número de pedido: <strong id="order-id">${esc(o.order_id)}</strong></p>
-<p>Total: <strong>${fmt(Math.round(o.total * 100))}</strong>. Te enviaremos la confirmación a ${esc(o.customer.email)}.</p>
-<ul>${o.items.map((i) => `<li>${i.quantity} × ${esc(i.name)} — ${fmt(Math.round(i.unit_price * 100))}</li>`).join('')}</ul>
+${detalle}
 <p><a href="/">Volver a la tienda</a></p>`,
+  });
+}
+
+function pedidoError(cartCount) {
+  return layout({
+    title: 'No hemos podido registrar el pedido · Casa Guernica',
+    description: 'No hemos podido registrar tu pedido. Tu carrito se conserva: vuelve a intentarlo en unos segundos.',
+    cartCount,
+    body: `<h1>No hemos podido registrar tu pedido</h1>
+<p class="warn">No se ha cobrado nada y tu carrito sigue guardado. Vuelve a intentarlo en unos segundos.</p>
+<p><a class="btn btn-big btn-primary" href="/checkout">Intentar de nuevo</a> <a href="/carrito">Ver carrito</a></p>`,
   });
 }
 
@@ -232,4 +244,4 @@ function error(code, cartCount) {
   });
 }
 
-module.exports = { home, categoria, producto, carrito, checkout, confirmacion, ayuda, error };
+module.exports = { home, categoria, producto, carrito, checkout, confirmacion, pedidoError, ayuda, error };

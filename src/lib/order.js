@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const BUZON_URL = process.env.BUZON_URL || 'https://hk-buzon-168798369712.europe-southwest1.run.app/api/pedido';
 
 function isoWithOffset(d = new Date()) {
-  // ISO 8601 con segundos y zona horaria explícita (UTC "+00:00")
-  return d.toISOString().replace(/\.\d{3}Z$/, '+00:00');
+  // ISO 8601 con segundos y zona horaria (UTC, "Z"), igual que el ejemplo de la guía: 2026-11-25T16:42:10Z
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
 function buildOrder(summary, customer) {
@@ -34,29 +34,37 @@ async function post(order) {
   });
 }
 
-// Envía al buzón; si responde 502 reintenta una vez.
+async function attempt(order) {
+  try {
+    const r = await post(order);
+    let body = '';
+    try { body = await r.text(); } catch (_) { /* nada */ }
+    return { status: r.status, body };
+  } catch (_) { return { status: 0, body: '' }; } // red/timeout
+}
+
+// Envía al buzón; si responde 502 (o falla la red) reintenta UNA vez con el mismo order_id.
+// Si el primer intento sí llegó a guardarse, el reintento da 422 por order_id repetido: eso cuenta como éxito.
 async function send(order) {
-  let res;
-  try { res = await post(order); } catch (e) { res = { status: 0 }; }
-  if (res.status === 502 || res.status === 0) {
-    try { res = await post(order); } catch (e) { res = { status: 0 }; }
+  let r = await attempt(order);
+  let retried = false;
+  if (r.status === 502 || r.status === 0) {
+    retried = true;
+    r = await attempt(order);
   }
-  let body = null;
-  try { body = res.text ? await res.text() : null; } catch (_) { /* nada */ }
-  return { ok: res.status >= 200 && res.status < 300, status: res.status, body };
+  const dup = retried && r.status === 422 && /order_id/i.test(r.body) && /(repet|duplic|exist|ya )/i.test(r.body);
+  return { ok: (r.status >= 200 && r.status < 300) || dup, status: r.status, body: String(r.body).slice(0, 300) };
 }
 
 function validateCustomer(b) {
   const name = String(b.name || '').trim().slice(0, 120);
   const email = String(b.email || '').trim().slice(0, 160);
   const address = String(b.address || '').trim().slice(0, 300);
-  const pago = ['tarjeta', 'bizum', 'transferencia'].includes(b.pago) ? b.pago : '';
   const errors = [];
-  if (!name) errors.push('Escribe tu nombre.');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Escribe un email válido.');
-  if (!address) errors.push('Escribe tu dirección de envío.');
-  if (!pago) errors.push('Elige un método de pago.');
-  return { customer: { name, email, address }, pago, errors };
+  if (!name) errors.push('Falta el nombre.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('El email no es válido (ejemplo: nombre@correo.com).');
+  if (!address) errors.push('Falta la dirección de envío.');
+  return { customer: { name, email, address }, errors };
 }
 
 module.exports = { buildOrder, send, validateCustomer, isoWithOffset };
