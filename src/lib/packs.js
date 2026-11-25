@@ -4,6 +4,9 @@ const { bySku, cents } = require('./catalog');
 
 const LIMITE = 400000;
 const DEF = [
+  // Casa completa (salón + dormitorio + iluminación/textil/almacenaje): primeros en portada
+  { id: 'casa-completa-premium', estancia: 'Casa completa', tramo: 'Premium', skus: ['sofa-aarhus-3-plazas', 'sillon-viena-1-plaza', 'cama-brisa-150x200-tapizada', 'colchon-confort-150x200', 'armario-2-puertas-correderas', 'aparador-3-puertas', 'estanteria-libreria-5-baldas', 'mesilla-de-noche-1-cajon', 'lampara-de-pie-arco', 'flexo-led-regulable', 'lampara-de-mesilla-ceramica', 'alfombra-de-salon-160x230', 'pack-2-almohadas-viscoelasticas', 'juego-de-sabanas-150'] },
+  { id: 'casa-completa-confort', estancia: 'Casa completa', tramo: 'Confort', skus: ['sofa-bergen-3-plazas', 'cama-luna-150x190', 'colchon-descanso-150x190', 'armario-2-puertas-correderas', 'aparador-3-puertas', 'estanteria-libreria-5-baldas', 'cajonera-con-ruedas-3-cajones', 'mesilla-de-noche-1-cajon', 'lampara-de-pie-arco', 'lampara-de-techo-trenzada', 'flexo-led-regulable', 'funda-nordica-150-todo-el-ano'] },
   { id: 'salon-basico', estancia: 'Salón', tramo: 'Básico', skus: ['sofa-cama-turku-2-plazas', 'alfombra-de-salon-160x230', 'lampara-de-pie-arco', 'pack-4-cojines-decorativos', 'manta-para-sofa'] },
   { id: 'salon-confort', estancia: 'Salón', tramo: 'Confort', skus: ['sofa-nordico-3-plazas', 'sillon-viena-1-plaza', 'alfombra-de-salon-160x230', 'lampara-de-pie-arco', 'aparador-3-puertas', 'pack-4-cojines-decorativos', 'manta-para-sofa'] },
   { id: 'salon-premium', estancia: 'Salón', tramo: 'Premium', skus: ['sofa-aarhus-3-plazas', 'sillon-viena-1-plaza', 'aparador-3-puertas', 'alfombra-de-salon-160x230', 'lampara-de-pie-arco', 'lampara-de-techo-trenzada', 'estanteria-libreria-5-baldas', 'pack-4-cojines-decorativos', 'manta-para-sofa'] },
