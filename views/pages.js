@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { layout, card, esc } = require('./layout');
+const { layout, card, esc, imgTag } = require('./layout');
 const { CATEGORIAS, fmt, cents, productos } = require('../src/lib/catalog');
 const { packs } = require('../src/lib/packs');
 
@@ -45,6 +45,7 @@ const CONSEJO = `<p class="consejo"><strong>Consejo:</strong> aprovecha tu presu
 
 function packCard(pk, big = false) {
   return `<article class="pack${big ? ' pack-big' : ''}">
+  ${pk.items[0] ? imgTag(pk.items[0]) : ''}
   ${badges(pk)}
   <h3>Pack ${esc(pk.estancia)} ${esc(pk.tramo)}</h3>
   <p class="pack-price">${fmt(pk.total)}</p>
@@ -110,7 +111,7 @@ function producto(p, comps, cartCount, restante = 400000) {
     cartCount,
     body: `<p class="crumbs"><a href="/">Inicio</a> › <a href="/categoria/${esc(p.categoria)}">${esc(CATEGORIAS[p.categoria])}</a> › ${esc(p.nombre)}</p>
 <div class="product">
-  <img src="/img/${esc(p.categoria)}.svg" alt="${esc(p.nombre)}, ${esc(p.color)}, ${esc(p.material)}" width="480" height="320">
+  ${imgTag(p, { lazy: false })}
   <div>
     <h1>${esc(p.nombre)}</h1>
     <p class="price big">${fmt(cents(p))}</p>

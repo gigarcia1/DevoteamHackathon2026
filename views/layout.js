@@ -1,4 +1,5 @@
 'use strict';
+const fs = require('fs');
 const { esc } = require('../src/lib/security');
 const { CATEGORIAS, fmt, cents } = require('../src/lib/catalog');
 
@@ -36,6 +37,22 @@ ${scripts.map((s) => `<script src="${s}" defer></script>`).join('\n')}
 </html>`;
 }
 
+// Imagen de producto: public/img/productos/<sku>.webp > public/img/categorias/<cat>.webp > SVG de la categoría
+const IMG_DIR = require("path").join(__dirname, "..", "public", "img");
+const exists = (rel) => { try { return fs.statSync(require("path").join(IMG_DIR, rel)).isFile(); } catch (_) { return false; } };
+const imgCache = new Map();
+function imgSrc(p) {
+  if (!imgCache.has(p.sku)) {
+    const s = exists(`productos/${p.sku}.webp`) ? `/img/productos/${p.sku}.webp`
+      : exists(`categorias/${p.categoria}.webp`) ? `/img/categorias/${p.categoria}.webp` : `/img/${p.categoria}.svg`;
+    imgCache.set(p.sku, s);
+  }
+  return imgCache.get(p.sku);
+}
+function imgTag(p, { w = 420, h = 280, lazy = true } = {}) {
+  return `<img src="${esc(imgSrc(p))}" alt="${esc(p.nombre)} en color ${esc(p.color)}, ${esc(p.material)}" width="${w}" height="${h}"${lazy ? ' loading="lazy" decoding="async"' : ''} class="pimg">`;
+}
+
 function card(p, { showAdd = true, label = "Añadir al carrito" } = {}) {
   const add = !p.disponible
     ? '<p class="nostock">Sin stock</p><button type="button" class="btn" disabled>Sin stock</button>'
@@ -43,7 +60,7 @@ function card(p, { showAdd = true, label = "Añadir al carrito" } = {}) {
       ? `<form method="post" action="/carrito/anadir"><input type="hidden" name="sku" value="${esc(p.sku)}"><button type="submit" class="btn" aria-label="${label}: ${esc(p.nombre)}">${label}</button></form>`
       : '';
   return `<article class="card">
-  <a href="/producto/${esc(p.sku)}"><img src="/img/${esc(p.categoria)}.svg" alt="${esc(p.nombre)}, ${esc(p.color)}, ${esc(p.material)}" width="240" height="160" loading="lazy"></a>
+  <a href="/producto/${esc(p.sku)}">${imgTag(p)}</a>
   <h3><a href="/producto/${esc(p.sku)}">${esc(p.nombre)}</a></h3>
   <p class="meta">${esc(p.color)} · ${esc(p.material)}${p.plazas ? ` · ${p.plazas} plazas` : ''} · ${p.ancho_cm} cm</p>
   <p class="price">${fmt(cents(p))}</p>
@@ -51,4 +68,4 @@ function card(p, { showAdd = true, label = "Añadir al carrito" } = {}) {
 </article>`;
 }
 
-module.exports = { layout, card, esc };
+module.exports = { layout, card, esc, imgTag };
