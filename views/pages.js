@@ -1,4 +1,6 @@
 'use strict';
+const fs = require('fs');
+const path = require('path');
 const { layout, card, esc } = require('./layout');
 const { CATEGORIAS, fmt, cents, productos } = require('../src/lib/catalog');
 const { packs } = require('../src/lib/packs');
@@ -12,29 +14,66 @@ const TRUST = `<section class="trust" aria-label="Ventajas">
   </ul>
 </section>`;
 
-function packCard(pk) {
-  return `<article class="pack">
-  <h3>Pack ${esc(pk.estancia)} ${esc(pk.tramo)} — ${fmt(pk.total)}</h3>
-  <ul>${pk.items.map((p) => `<li><a href="/producto/${esc(p.sku)}">${esc(p.nombre)}</a> — ${fmt(cents(p))}</li>`).join('')}</ul>
+// "Más vendido": por estancia, el pack cuyos productos suman más unidades en historial-ventas.csv
+const vendidas = new Map();
+try {
+  const idToSku = new Map();
+  for (const p of productos) for (const id of p.ids_origen) idToSku.set(id, p.sku);
+  const lines = fs.readFileSync(path.join(__dirname, '..', 'data', 'raw', 'historial-ventas.csv'), 'utf8').trim().split(/\r?\n/).slice(1);
+  for (const l of lines) {
+    const [, , id, q] = l.split(',');
+    const s = idToSku.get(id);
+    if (s) vendidas.set(s, (vendidas.get(s) || 0) + (parseInt(q, 10) || 0));
+  }
+} catch (_) { /* sin historial, sin badge */ }
+const masVendido = new Set();
+for (const e of new Set(packs.map((p) => p.estancia))) {
+  const score = (pk) => pk.items.reduce((s, p) => s + (vendidas.get(p.sku) || 0), 0) / pk.items.length;
+  const top = packs.filter((p) => p.estancia === e).sort((a, b) => score(b) - score(a))[0];
+  if (top && score(top) > 0) masVendido.add(top.id);
+}
+
+function badges(pk) {
+  const b = [];
+  if (masVendido.has(pk.id)) b.push('<span class="badge badge-hot">Más vendido</span>');
+  if (pk.total >= 50000) b.push('<span class="badge">Envío gratis</span>');
+  if (pk.total >= 150000) b.push('<span class="badge">Montaje gratis</span>');
+  return b.length ? `<p class="badges">${b.join('')}</p>` : '';
+}
+
+function packCard(pk, big = false) {
+  return `<article class="pack${big ? ' pack-big' : ''}">
+  ${badges(pk)}
+  <h3>Pack ${esc(pk.estancia)} ${esc(pk.tramo)}</h3>
+  <p class="pack-price">${fmt(pk.total)}</p>
+  <p class="pack-count">${pk.items.length} productos incluidos · IVA incluido</p>
+  <ul class="pack-items">${pk.items.map((p) => `<li><a href="/producto/${esc(p.sku)}">${esc(p.nombre)}</a> <span>${fmt(cents(p))}</span></li>`).join('')}</ul>
   <form method="post" action="/carrito/pack"><input type="hidden" name="pack" value="${esc(pk.id)}">
-  <button type="submit" class="btn btn-big" aria-label="Añadir pack completo ${esc(pk.estancia)} ${esc(pk.tramo)}">Añadir pack completo</button></form>
+  <button type="submit" class="btn btn-big btn-primary btn-block" aria-label="Añadir pack completo al carrito: ${esc(pk.estancia)} ${esc(pk.tramo)}">Añadir pack completo al carrito</button></form>
 </article>`;
 }
 
 function home(cartCount) {
   const estancias = [...new Set(packs.map((p) => p.estancia))];
-  const sections = estancias.map((e) => `<section class="estancia" aria-labelledby="h-${esc(e)}">
-  <h2 id="h-${esc(e)}">Packs ${esc(e)}</h2>
-  <div class="grid packs">${packs.filter((p) => p.estancia === e).map(packCard).join('')}</div>
-</section>`).join('\n');
+  const orden = ['Casa completa', ...estancias.filter((e) => e !== 'Casa completa')].filter((e) => estancias.includes(e));
+  const sections = orden.map((e) => {
+    const big = e === 'Casa completa';
+    return `<section class="estancia${big ? ' estancia-top' : ''}" aria-labelledby="h-${esc(e).replace(/\s+/g, '-')}">
+  <h2 id="h-${esc(e).replace(/\s+/g, '-')}">${big ? 'Casa completa: todo en un clic' : `Packs ${esc(e)}`}</h2>
+  <div class="grid packs${big ? ' packs-big' : ''}">${packs.filter((p) => p.estancia === e).map((p) => packCard(p, big)).join('')}</div>
+</section>`;
+  }).join('\n');
   const cats = Object.entries(CATEGORIAS).map(([k, v]) => `<li><a href="/categoria/${k}">${esc(v)}</a></li>`).join('');
   return layout({
     title: 'Casa Guernica · Tienda de muebles online con packs por estancia',
     description: 'Muebles para salón, dormitorio, oficina y comedor. Packs completos por estancia, envío gratis desde 500 € y montaje gratis desde 1.500 €.',
     cartCount,
-    body: `<h1>Muebles para toda la casa, en packs listos para comprar</h1>
+    body: `<section class="hero">
+  <h1>Amuebla tu casa completa</h1>
+  <p class="hero-sub">Envío gratis desde 500 €, montaje gratis desde 1.500 €.</p>
+  <p class="lead">Elige un pack y añádelo al carrito con un clic. Todos los packs cuestan menos de 4.000 € y usan precios de catálogo.</p>
+</section>
 ${TRUST}
-<p class="lead">Elige un pack completo por estancia y añádelo al carrito con un clic. Todos los packs cuestan menos de 4.000 €.</p>
 ${sections}
 <section aria-labelledby="h-cats"><h2 id="h-cats">Todas las categorías</h2><ul class="catlist">${cats}</ul></section>`,
   });
@@ -102,6 +141,7 @@ function carrito(s, sugerencias, cartCount, msg) {
   <td><form method="post" action="/carrito/actualizar" class="inline"><input type="hidden" name="sku" value="${esc(l.sku)}"><input type="hidden" name="qty" value="0"><button type="submit" class="btn-small" aria-label="Quitar ${esc(l.p.nombre)}">Quitar</button></form></td>
 </tr>`).join('');
   const body = s.lines.length ? `
+<div class="checkout-top"><p class="total">Total: <strong>${fmt(s.total)}</strong></p><a class="btn btn-big btn-primary" href="/checkout">Finalizar compra</a></div>
 <div class="budget" role="status">
   <p>Te quedan <strong>${fmt(Math.max(0, s.restante))}</strong> de 4.000 €</p>
   <div class="bar"><div class="fill w${Math.round(pct / 5) * 5}"></div></div>
@@ -114,8 +154,8 @@ ${s.faltaEnvio > 0 ? `<p class="hint">Te faltan <strong>${fmt(s.faltaEnvio)}</st
 <thead><tr><th scope="col">Producto</th><th scope="col">Precio</th><th scope="col">Cantidad</th><th scope="col">Subtotal</th><th scope="col">Quitar</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
 <p class="total">Total: <strong>${fmt(s.total)}</strong> (IVA incluido)</p>
-<p><a class="btn btn-big btn-primary" href="/checkout">Finalizar compra</a></p>
-${sugerencias.length ? `<section aria-labelledby="h-sug"><h2 id="h-sug">Te puede interesar (cabe en tu presupuesto)</h2><div class="grid">${sugerencias.map((p) => card(p)).join('')}</div></section>` : ''}`
+<p><a class="btn btn-big btn-primary btn-block" href="/checkout">Finalizar compra</a></p>
+${sugerencias.length ? `<section aria-labelledby="h-sug"><h2 id="h-sug">Completa tu compra</h2><p>Accesorios y complementos que caben en lo que te queda de presupuesto.</p><div class="grid">${sugerencias.map((p) => card(p)).join('')}</div></section>` : ''}`
     : `<p>Tu carrito está vacío.</p><p><a class="btn" href="/">Ver packs en la portada</a></p>`;
   return layout({
     title: `Tu carrito (${s.count}) · Casa Guernica`,
