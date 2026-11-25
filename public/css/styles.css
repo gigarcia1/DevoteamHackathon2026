@@ -1,0 +1,69 @@
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1f2328;background:#faf8f5;line-height:1.5;overflow-x:hidden}
+img,svg,video{max-width:100%;height:auto;display:block}
+a{color:#7a3e12}
+main{max-width:1200px;margin:0 auto;padding:16px}
+h1{font-size:1.8rem;margin:.5rem 0 1rem}
+h2{font-size:1.35rem;margin:1.5rem 0 .75rem}
+h3{font-size:1.05rem;margin:.5rem 0}
+.site-header{background:#2b2118;color:#fff;padding:12px 16px}
+.site-header a{color:#fff}
+.logo{font-weight:700;font-size:1.2rem;text-decoration:none}
+.main-nav{display:flex;flex-wrap:wrap;gap:16px;margin:8px 0}
+.cart-link{font-weight:700;background:#c9692c;padding:4px 10px;border-radius:6px;text-decoration:none}
+.cats{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.95rem}
+.trust ul{list-style:none;margin:0 0 1rem;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;background:#efe6da;border-radius:8px}
+.lead{font-size:1.1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card,.pack{background:#fff;border:1px solid #e3dccf;border-radius:8px;padding:12px;min-width:0}
+.card img{width:100%;border-radius:6px;background:#efe6da}
+.pack ul{padding-left:18px;font-size:.92rem}
+.meta{color:#555;font-size:.9rem;margin:.25rem 0}
+.price{font-weight:700;font-size:1.15rem;margin:.25rem 0}
+.price.big{font-size:1.6rem}
+.btn,.btn-small{display:inline-block;background:#7a3e12;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-size:1rem;cursor:pointer;text-decoration:none}
+.btn-small{padding:4px 10px;font-size:.9rem}
+.btn-big{padding:14px 22px;font-size:1.15rem;font-weight:700}
+.btn-primary{background:#1f7a3a}
+.btn[disabled]{background:#999;cursor:not-allowed}
+.nostock{color:#a11;font-weight:700}
+.product{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.specs{display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.specs dt{font-weight:600}
+.specs dd{margin:0}
+.buy{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.buy input{width:80px}
+input,textarea,select{font:inherit;padding:8px;border:1px solid #bbb;border-radius:6px;max-width:100%}
+.checkout{display:flex;flex-direction:column;gap:6px;max-width:520px}
+.checkout input,.checkout textarea{width:100%}
+fieldset{border:1px solid #ccc;border-radius:6px;margin:8px 0}
+.radio{display:flex;gap:8px;align-items:center;margin:4px 0}
+.budget{background:#fff;border:1px solid #e3dccf;border-radius:8px;padding:12px;margin-bottom:12px}
+.bar{height:14px;background:#e9e2d6;border-radius:7px;overflow:hidden}
+.fill{height:100%;background:#1f7a3a}
+.w0{width:0}.w5{width:5%}.w10{width:10%}.w15{width:15%}.w20{width:20%}.w25{width:25%}.w30{width:30%}.w35{width:35%}.w40{width:40%}.w45{width:45%}.w50{width:50%}.w55{width:55%}.w60{width:60%}.w65{width:65%}.w70{width:70%}.w75{width:75%}.w80{width:80%}.w85{width:85%}.w90{width:90%}.w95{width:95%}.w100{width:100%}
+.hint{background:#fff6dd;border-left:4px solid #e0a100;padding:8px 12px}
+.ok{background:#e7f6ea;border-left:4px solid #1f7a3a;padding:8px 12px}
+.warn,.errors{background:#fde8e8;border-left:4px solid #a11;padding:8px 12px}
+.table-wrap{overflow-x:auto;max-width:100%}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{text-align:left;padding:8px;border-bottom:1px solid #eee;vertical-align:middle}
+.inline{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.inline input{width:64px}
+.total{font-size:1.3rem}
+.catlist{columns:2}
+.crumbs{font-size:.9rem}
+.chat-log{background:#fff;border:1px solid #e3dccf;border-radius:8px;padding:12px;min-height:120px;max-height:420px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word}
+.chat-log .q{font-weight:700;margin-top:8px}
+.chat-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.chat-form input{flex:1 1 200px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.site-footer{background:#2b2118;color:#eee;padding:16px;text-align:center;font-size:.9rem}
+.site-footer a{color:#fff}
+@media (max-width:700px){
+  .product{grid-template-columns:1fr}
+  h1{font-size:1.45rem}
+  .catlist{columns:1}
+  th,td{padding:6px 4px;font-size:.9rem}
+}

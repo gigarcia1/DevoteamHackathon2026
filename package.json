@@ -1,0 +1,19 @@
+{
+  "name": "mi-tienda",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tienda de muebles - Hackathon Devoteam 2026",
+  "main": "src/server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "build:catalog": "node data/build_catalog.js",
+    "validate": "node data/validate_catalog.js",
+    "img": "node scripts/gen_svgs.js",
+    "mock": "node tests/mock_buzon.js"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "express": "^4.21.2"
+  }
+}
