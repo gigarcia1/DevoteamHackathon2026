@@ -76,7 +76,7 @@ function loadA() {
     const net = toCents(pvp);
     const cat = mapOrThrow(CAT_A, fam, 'familia', ref);
     return {
-      id: ref.trim(), nombre: niceName(desc), categoria: cat,
+      id: ref.trim(), nombre: niceName(desc), upper: desc.trim() === desc.trim().toUpperCase(), categoria: cat,
       color: mapOrThrow(COLOR, color, 'color', ref), material: mapOrThrow(MATERIAL, acabado, 'material', ref),
       precio_cents: ivaIncl.trim().toUpperCase() === 'S' ? net : grossCents(net),
       plazas: cat === 'sofa' ? plazasFrom(desc) : null, ancho_cm: anchoFrom(medidas),
@@ -121,7 +121,9 @@ function build() {
     }
     if (!w.activo) { log.push(`DESCATALOGADO ${w.id} ${w.nombre}`); continue; }
     const plazas = w.categoria === 'sofa' ? (w.plazas ?? recs.map((r) => r.plazas).find((p) => p) ?? null) : null;
-    let nombre = w.nombre;
+    // Si el ganador venía en MAYÚSCULAS (A) y hay otra fuente con el nombre bien escrito, usamos esa grafía
+    const bien = recs.find((r) => r !== w && r.id.startsWith('B-'));
+    let nombre = w.upper && bien ? bien.nombre : w.nombre;
     if (plazas && !/plaza/i.test(nombre)) nombre += ` ${plazas} plaza${plazas > 1 ? 's' : ''}`;
     const stockRec = recs.find((r) => r.stock !== null);
     const stock = stockRec ? stockRec.stock : null; // A no informa stock: se asume disponible
