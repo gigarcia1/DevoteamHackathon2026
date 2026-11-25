@@ -47,6 +47,31 @@ const PARECIDOS = {
 const has = (q, w) => new RegExp(`(^| )${w}( |$)`).test(q);
 const STOP = new Set(['de', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'en', 'con', 'para', 'por', 'que', 'tienes', 'teneis', 'tienen', 'hay', 'busco', 'quiero', 'precio', 'cuanto', 'cuesta', 'vale', 'me', 'mi', 'algun', 'alguna', 'del', 'al', 'es', 'se', 'su', 'tu', 'hola', 'buenas', 'necesito', 'cual', 'cuales', 'color', 'material', 'barato', 'barata', 'caro', 'cara', 'mas', 'menos', 'plazas', 'plaza', 'cm', 'euros', 'eur', 'vendeis', 'venden', 'tenes', 'disponible', 'stock', 'catalogo', 'producto', 'productos', 'si', 'no', 'a', 'mueble', 'muebles']);
 
+// Cosas que no son muebles
+const FUERA = ['tele', 'tv', 'televisor', 'televisores', 'television', 'nevera', 'neveras', 'frigorifico', 'lavadora', 'lavavajillas', 'secadora', 'bici', 'bicicleta', 'bicis', 'movil', 'moviles', 'telefono', 'ordenador', 'portatil', 'tablet', 'horno', 'microondas', 'cafetera', 'aspiradora', 'coche', 'moto', 'consola', 'ropa', 'zapatos', 'zapatillas', 'patinete', 'impresora', 'altavoz', 'auriculares'];
+const MARCAS = new Set(['ikea', 'kivik', 'ektorp', 'malm', 'billy', 'pax', 'poang', 'friheten', 'conforama', 'kave', 'leroy', 'merlin', 'zara', 'home', 'maisons', 'monde', 'tempur', 'flex', 'pikolin', 'emma', 'samsung', 'lg', 'sony', 'xl', 'xxl', 'pro', 'max', 'plus', 'mini', 'premium']);
+const VOCAB = new Set([...Object.values(SINONIMOS).flat(), ...Object.values(COLORES).flat(), ...Object.values(MATERIALES).flat(), ...Object.values(PARECIDOS).flat(), ...Object.keys(CATEGORIAS)].map(norm).flatMap((s) => s.split(' ')));
+// Palabras distintivas: nombres propios (con mayúscula y no al principio), modelos con dígitos+letras, MAYÚSCULAS o marcas conocidas
+function distinctiveWords(raw) {
+  const toks = String(raw).replace(/[¿?¡!.,;:()"«»]/g, ' ').split(/\s+/).filter(Boolean);
+  const out = [];
+  toks.forEach((t, i) => {
+    const n = norm(t);
+    if (!n || n.length < 2 || STOP.has(n) || VOCAB.has(n) || /^\d+$/.test(n)) return;
+    const propio = i > 0 && /^\p{Lu}/u.test(t);
+    const modelo = /\d/.test(n) && /[a-z]/.test(n) && !/^\d+x\d+$/.test(n);
+    const caps = t.length >= 2 && t === t.toUpperCase() && /\p{L}/u.test(t);
+    if (propio || modelo || caps || MARCAS.has(n)) out.push(n);
+  });
+  return out;
+}
+function productPhrase(raw) {
+  let s = String(raw).replace(/[¿?¡!]/g, '').trim();
+  const lead = /^(hola|buenas|buenos dias|oye|tenéis|teneis|tienen|tienes|vendéis|vendeis|venden|hay|busco|quiero|necesito|me interesa|me gustaría|me gustaria|comprar|cuánto cuesta|cuanto cuesta|cuánto vale|cuanto vale|precio de|precio del|un|una|unos|unas|el|la|los|las|algún|algun|alguna|del|de)\b[\s,]*/i;
+  for (let i = 0; i < 6; i++) s = s.replace(lead, '');
+  return s.slice(0, 80) || String(raw).slice(0, 80);
+}
+
 function detect(map, q) { return Object.keys(map).filter((k) => map[k].some((w) => has(q, norm(w)))); }
 
 function listar(ps, intro) {
@@ -75,6 +100,22 @@ function responder(preguntaRaw) {
       /* colchones ya incluido en el texto oficial */
     }
     return out.join('\n').slice(0, 1450);
+  }
+
+  // 1b) Productos que no son muebles (tele, nevera, bici...) -> no los vendemos
+  const catsQ = detect(SINONIMOS, q);
+  if (!catsQ.length && FUERA.some((w) => has(q, w))) {
+    return 'No vendemos ese producto. Somos una tienda de muebles: ' + Object.values(CATEGORIAS).join(', ') + '.';
+  }
+
+  // 1c) Marca/modelo/nombre propio que no coincide con ningún producto -> «No, no tenemos X» + alternativas reales
+  const distintivas = distinctiveWords(preguntaRaw);
+  if (distintivas.length && !productos.some((p) => { const t = norm(p.nombre).split(' '); return distintivas.every((w) => t.includes(w)); })) {
+    let cat = catsQ[0] || null;
+    if (!cat) for (const [c, ws] of Object.entries(PARECIDOS)) if (ws.some((w) => q.includes(norm(w)))) { cat = c; break; }
+    const alt = productos.filter((p) => p.disponible && (!cat || p.categoria === cat)).sort((a, b) => b.precio - a.precio).slice(0, 3);
+    return (`No, no tenemos «${productPhrase(preguntaRaw)}» en nuestro catálogo.\nAlternativas parecidas:\n` +
+      alt.map((p) => `- ${p.nombre} (${p.color}, ${p.material}): ${fmt(cents(p))}. Ver /producto/${p.sku}`).join('\n')).slice(0, 1450);
   }
 
   // 2a) Nombre exacto: si la pregunta contiene el nombre completo de un producto, se responde con ese producto

@@ -41,6 +41,8 @@ function badges(pk) {
   return b.length ? `<p class="badges">${b.join('')}</p>` : '';
 }
 
+const CONSEJO = `<p class="consejo"><strong>Consejo:</strong> aprovecha tu presupuesto completo con un pack Casa completa — todo a precio de catálogo, envío y montaje gratis. <a href="/#h-Casa-completa">Ver packs Casa completa</a></p>`;
+
 function packCard(pk, big = false) {
   return `<article class="pack${big ? ' pack-big' : ''}">
   ${badges(pk)}
@@ -74,6 +76,7 @@ function home(cartCount) {
   <p class="lead">Elige un pack y añádelo al carrito con un clic. Todos los packs cuestan menos de 4.000 € y usan precios de catálogo.</p>
 </section>
 ${TRUST}
+${CONSEJO}
 ${sections}
 <section aria-labelledby="h-cats"><h2 id="h-cats">Todas las categorías</h2><ul class="catlist">${cats}</ul></section>`,
   });
@@ -164,6 +167,7 @@ ${sugerencias.length ? `<section aria-labelledby="h-sug"><h2 id="h-sug">Te queda
     description: 'Revisa los productos de tu carrito, el total con IVA y lo que te queda para envío y montaje gratis.',
     cartCount,
     body: `<h1>Tu carrito</h1>
+${CONSEJO}
 <p class="iva-note">Precios con IVA incluido. Envío gratis desde 500 €, montaje gratis desde 1.500 €.</p>${msg ? `<p class="ok" role="status">${esc(msg)}</p>` : ''}${body}`,
   });
 }
